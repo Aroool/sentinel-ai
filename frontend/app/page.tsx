@@ -86,36 +86,49 @@ export default function Home() {
     return "Target: manual review required";
   }, [request]);
 
-  const analyzeRequest = () => {
-    const result = analyzeAction(request) as AnalysisResult;
-    setAnalysis(result);
+  const analyzeRequest = async () => {
+  const response = await fetch("http://localhost:8000/analyze", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      input: request,
+    }),
+  });
 
-    const nextStatus =
-      result.risk === "LOW" ? "Ready for execution" : "Awaiting human approval";
+  const result = await response.json();
 
-    setStatus(nextStatus);
+  setAnalysis(result);
 
-    setTimeline([
-      {
-        time: "Now",
-        title: "Request created",
-        desc: `User submitted: "${request}"`,
-      },
-      {
-        time: "Now",
-        title: "Risk analysis completed",
-        desc: `SentinelAI classified the request as ${result.risk} risk.`,
-      },
-      {
-        time: "Now",
-        title: nextStatus,
-        desc:
-          result.risk === "LOW"
-            ? "This request is considered safe to execute."
-            : "Execution paused until the authenticated user approves.",
-      },
-    ]);
-  };
+  const nextStatus =
+    result.risk === "LOW"
+      ? "Ready for execution"
+      : "Awaiting human approval";
+
+  setStatus(nextStatus);
+
+  setTimeline([
+    {
+      time: "Now",
+      title: "Request created",
+      desc: `User submitted: "${request}"`,
+    },
+    {
+      time: "Now",
+      title: "Risk analysis completed",
+      desc: `SentinelAI classified the request as ${result.risk} risk.`,
+    },
+    {
+      time: "Now",
+      title: nextStatus,
+      desc:
+        result.risk === "LOW"
+          ? "This request is considered safe to execute."
+          : "Execution paused until approval.",
+    },
+  ]);
+};
 
   const approveAction = () => {
     setStatus("Approved and executed");
