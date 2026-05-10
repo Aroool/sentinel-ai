@@ -22,6 +22,7 @@ import {
   History,
   X,
   Tag,
+  Menu,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@ const NAV_ITEMS = [
 
 const RISK_CONFIG: Record<
   RiskLevel,
-  { badge: string; bar: string; button: string; icon: string; meter: number }
+  { badge: string; bar: string; button: string; icon: string; meter: number; glow: string; orb: string }
 > = {
   LOW: {
     badge: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
@@ -77,6 +78,8 @@ const RISK_CONFIG: Record<
     button: "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30",
     icon: "text-emerald-400",
     meter: 20,
+    glow: "rgba(16,185,129,0.07)",
+    orb: "rgba(16,185,129,0.12)",
   },
   MEDIUM: {
     badge: "border-amber-500/40 bg-amber-500/10 text-amber-400",
@@ -84,6 +87,8 @@ const RISK_CONFIG: Record<
     button: "bg-amber-600 hover:bg-amber-700 shadow-amber-600/30",
     icon: "text-amber-400",
     meter: 50,
+    glow: "rgba(245,158,11,0.07)",
+    orb: "rgba(245,158,11,0.10)",
   },
   HIGH: {
     badge: "border-red-500/40 bg-red-500/10 text-red-400",
@@ -91,6 +96,8 @@ const RISK_CONFIG: Record<
     button: "bg-red-600 hover:bg-red-700 shadow-red-600/30",
     icon: "text-red-400",
     meter: 75,
+    glow: "rgba(239,68,68,0.08)",
+    orb: "rgba(239,68,68,0.12)",
   },
   CRITICAL: {
     badge: "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-400",
@@ -98,6 +105,8 @@ const RISK_CONFIG: Record<
     button: "bg-fuchsia-600 hover:bg-fuchsia-700 shadow-fuchsia-600/30",
     icon: "text-fuchsia-400",
     meter: 100,
+    glow: "rgba(217,70,239,0.10)",
+    orb: "rgba(217,70,239,0.14)",
   },
 };
 
@@ -206,6 +215,7 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [stats, setStats] = useState<Stats>({ analyzed: 0, approved: 0, blocked: 0, critical: 0 });
   const [isLoading, setIsLoading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const historyId = useRef(0);
 
   const statusLabel =
@@ -318,9 +328,38 @@ export default function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#09090b] text-white">
       {/* Background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(59,130,246,0.12),transparent)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* Risk-adaptive ambient glow */}
+        <motion.div
+          animate={{
+            background: `radial-gradient(ellipse 70% 45% at 50% 0%, ${cfg.glow}, transparent)`,
+          }}
+          transition={{ duration: 1.4, ease: "easeInOut" }}
+          className="absolute inset-0"
+        />
+        {/* Drifting orb — top left */}
+        <motion.div
+          animate={{ x: [0, 45, -25, 0], y: [0, -35, 20, 0] }}
+          transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-40 -left-20 h-[520px] w-[520px] rounded-full blur-[110px]"
+          style={{ background: `radial-gradient(circle, ${cfg.orb}, transparent 70%)` }}
+        />
+        {/* Drifting orb — top right */}
+        <motion.div
+          animate={{ x: [0, -35, 20, 0], y: [0, 50, -30, 0] }}
+          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut", delay: 5 }}
+          className="absolute -top-20 right-[5%] h-[420px] w-[420px] rounded-full bg-violet-700/5 blur-[100px]"
+        />
+        {/* Drifting orb — bottom center */}
+        <motion.div
+          animate={{ x: [0, 30, -40, 0], y: [0, -45, 25, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 10 }}
+          className="absolute -bottom-32 left-[35%] h-[380px] w-[380px] rounded-full bg-blue-800/5 blur-[90px]"
+        />
+        {/* Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.022)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.022)_1px,transparent_1px)] bg-[size:48px_48px]" />
+        {/* Vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(0,0,0,0.4)_100%)]" />
       </div>
 
       <div className="relative flex min-h-screen">
@@ -445,6 +484,70 @@ export default function Home() {
           </div>
         </motion.aside>
 
+        {/* ── Mobile Sidebar Drawer ── */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setMobileMenuOpen(false)}
+                className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+              />
+              <motion.aside
+                initial={{ x: -280 }}
+                animate={{ x: 0 }}
+                exit={{ x: -280 }}
+                transition={{ type: "spring", damping: 28, stiffness: 280 }}
+                className="fixed inset-y-0 left-0 z-50 w-64 flex flex-col border-r border-white/10 bg-[#09090b]/95 backdrop-blur-2xl lg:hidden"
+              >
+                <div className="flex items-center justify-between h-14 px-4 border-b border-white/8">
+                  <div className="flex items-center gap-2.5">
+                    <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-2">
+                      <Shield className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold leading-none">SentinelAI</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">Zero Trust Console</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-zinc-500 hover:text-white transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mx-3 mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2">
+                  <p className="text-[10px] text-zinc-500">Policy Status</p>
+                  <p className="text-xs font-semibold text-emerald-400">Zero Trust Active</p>
+                </div>
+                <nav className="flex-1 space-y-0.5 px-2 py-3">
+                  {NAV_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
+                          item.active
+                            ? "border border-blue-500/20 bg-blue-600/12 text-blue-300"
+                            : "text-zinc-500 hover:bg-white/5 hover:text-zinc-200"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* ── Main Content ── */}
         <div className="flex-1 min-w-0 px-5 py-7 lg:px-8">
           {/* Header */}
@@ -454,7 +557,14 @@ export default function Home() {
             transition={{ duration: 0.45 }}
             className="mb-7 flex items-start justify-between gap-4"
           >
-            <div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="lg:hidden rounded-xl border border-white/10 bg-white/5 p-2 text-zinc-400 hover:text-white transition-colors"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+              <div>
               <div className="flex items-center gap-2 mb-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-xs text-zinc-500 font-medium">Security engine active</span>
@@ -466,6 +576,7 @@ export default function Home() {
                 Every developer action is analyzed, classified by risk, and held for human
                 approval before execution.
               </p>
+            </div>
             </div>
             <button
               onClick={() => setShowHistory((v) => !v)}
