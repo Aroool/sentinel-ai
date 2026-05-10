@@ -133,27 +133,53 @@ const DEFAULT_ANALYSIS: AnalysisResult = {
 
 // ── Sub-components ────────────────────────────────────────────────────────
 
-function RiskMeter({ risk }: { risk: RiskLevel }) {
-  const cfg = RISK_CONFIG[risk];
+const GAUGE_R = 38;
+const GAUGE_C = 2 * Math.PI * GAUGE_R;
+const GAUGE_ARC = GAUGE_C * 0.75; // 270° arc
+const GAUGE_GAP = GAUGE_C * 0.25;
+
+const GAUGE_HEX: Record<RiskLevel, string> = {
+  LOW: "#10b981",
+  MEDIUM: "#f59e0b",
+  HIGH: "#ef4444",
+  CRITICAL: "#d946ef",
+};
+
+function CircularGauge({ risk }: { risk: RiskLevel }) {
+  const pct = RISK_CONFIG[risk].meter;
+  const offset = GAUGE_ARC * (1 - pct / 100);
+  const color = GAUGE_HEX[risk];
   return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-xs">
-        <span className="text-zinc-500">Risk Severity</span>
-        <span className={`font-semibold ${cfg.icon}`}>{risk}</span>
-      </div>
-      <div className="h-1.5 w-full rounded-full bg-white/8 overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${cfg.bar}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${cfg.meter}%` }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
+    <div className="relative flex items-center justify-center w-[88px] h-[88px] flex-shrink-0">
+      <svg width="88" height="88" style={{ transform: "rotate(-135deg)" }}>
+        {/* Track */}
+        <circle
+          cx="44" cy="44" r={GAUGE_R}
+          fill="none"
+          stroke="rgba(255,255,255,0.07)"
+          strokeWidth="6.5"
+          strokeDasharray={`${GAUGE_ARC} ${GAUGE_GAP}`}
+          strokeLinecap="round"
         />
-      </div>
-      <div className="flex justify-between text-[10px] text-zinc-600">
-        <span>LOW</span>
-        <span>MEDIUM</span>
-        <span>HIGH</span>
-        <span>CRITICAL</span>
+        {/* Fill */}
+        <motion.circle
+          cx="44" cy="44" r={GAUGE_R}
+          fill="none"
+          stroke={color}
+          strokeWidth="6.5"
+          strokeDasharray={`${GAUGE_ARC} ${GAUGE_GAP}`}
+          initial={{ strokeDashoffset: GAUGE_ARC }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 0.75, ease: "easeOut" }}
+          strokeLinecap="round"
+          style={{ filter: `drop-shadow(0 0 7px ${color}88)` }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+        <span className={`text-[10px] font-bold tracking-wide ${RISK_CONFIG[risk].icon}`}>
+          {risk}
+        </span>
+        <span className="text-[9px] text-zinc-600">{pct}%</span>
       </div>
     </div>
   );
@@ -756,49 +782,44 @@ export default function Home() {
               variants={CARD}
               className="rounded-2xl border border-white/8 bg-white/4 backdrop-blur-xl p-5 shadow-xl"
             >
-              <div className="flex items-start justify-between mb-4 gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-2">
-                    <AlertTriangle className="h-4 w-4 text-red-400" />
-                  </div>
-                  <div>
+              {/* Header row: icon+title on left, gauge on right */}
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-red-400" />
+                    </div>
                     <h2 className="text-sm font-semibold">Action Analysis</h2>
-                    <p className="text-[11px] text-zinc-500">Security classification</p>
                   </div>
-                </div>
-                <motion.span
-                  key={analysis.risk}
-                  initial={{ scale: 0.85, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className={`flex-shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-bold tracking-wide ${cfg.badge}`}
-                >
-                  {analysis.risk}
-                </motion.span>
-              </div>
-
-              <div className="space-y-4 text-sm">
-                <RiskMeter risk={analysis.risk} />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-white/6 bg-black/30 p-3">
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Action</p>
-                    <p className="text-xs font-medium text-zinc-200 leading-snug">{analysis.action}</p>
-                  </div>
-                  <div className="rounded-xl border border-white/6 bg-black/30 p-3">
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Category</p>
+                  <motion.span
+                    key={analysis.risk}
+                    initial={{ scale: 0.85, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-widest ${cfg.badge}`}
+                  >
+                    {analysis.risk} RISK
+                  </motion.span>
+                  <div className="mt-3 space-y-1.5">
+                    <div>
+                      <p className="text-[10px] text-zinc-600 uppercase tracking-wider">Action</p>
+                      <p className="text-xs font-medium text-zinc-200 leading-snug mt-0.5">{analysis.action}</p>
+                    </div>
                     <div className="flex items-center gap-1.5">
                       <Tag className="h-3 w-3 text-blue-400 flex-shrink-0" />
-                      <p className="text-xs font-medium text-zinc-200 leading-snug">{analysis.category}</p>
+                      <p className="text-[11px] text-zinc-400">{analysis.category}</p>
                     </div>
                   </div>
                 </div>
+                <CircularGauge risk={analysis.risk} />
+              </div>
 
+              <div className="space-y-3 text-sm">
                 <div>
                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Why it&apos;s risky</p>
                   <ul className="space-y-1.5">
                     {analysis.reason.map((r, i) => (
                       <li key={i} className="flex gap-2 text-xs text-zinc-300 leading-relaxed">
-                        <span className={`mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full ${cfg.bar}`} />
+                        <span className={`mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full ${cfg.bar}`} />
                         {r}
                       </li>
                     ))}
