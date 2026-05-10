@@ -190,26 +190,46 @@ function StatCard({
   label,
   value,
   colorClass,
+  hoverShadow,
 }: {
   icon: React.ElementType;
   label: string;
   value: number;
   colorClass: string;
+  hoverShadow: string;
 }) {
   return (
     <motion.div
-      whileHover={{ y: -2, scale: 1.01 }}
+      whileHover={{ y: -3, boxShadow: hoverShadow }}
+      transition={{ duration: 0.2 }}
       className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/4 backdrop-blur-xl p-4"
     >
       <div className={`rounded-xl p-2.5 ${colorClass}`}>
         <Icon className="h-4 w-4" />
       </div>
       <div>
-        <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
+        <motion.p
+          key={value}
+          initial={{ y: -8, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="text-xl font-bold tabular-nums leading-none"
+        >
+          {value}
+        </motion.p>
         <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
       </div>
     </motion.div>
   );
+}
+
+function logColor(line: string): string {
+  if (/critical|fuchsia|destroy|wipe/i.test(line)) return "text-fuchsia-400";
+  if (/hold|denied|blocked|approval denied/i.test(line)) return "text-red-400";
+  if (/warning|medium/i.test(line)) return "text-amber-400";
+  if (/safe|complete|approved|execution complete/i.test(line)) return "text-emerald-300";
+  if (/received|running|analyzing|pattern/i.test(line)) return "text-zinc-400";
+  return "text-emerald-500";
 }
 
 function HistoryBadge({ risk }: { risk: RiskLevel }) {
@@ -625,29 +645,21 @@ export default function Home() {
             transition={{ duration: 0.4, delay: 0.08 }}
             className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6"
           >
-            <StatCard
-              icon={Activity}
-              label="Total Analyzed"
-              value={stats.analyzed}
+            <StatCard icon={Activity} label="Total Analyzed" value={stats.analyzed}
               colorClass="bg-blue-500/10 border border-blue-500/20 text-blue-400"
+              hoverShadow="0 8px 30px rgba(59,130,246,0.15)"
             />
-            <StatCard
-              icon={ShieldCheck}
-              label="Approved"
-              value={stats.approved}
+            <StatCard icon={ShieldCheck} label="Approved" value={stats.approved}
               colorClass="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              hoverShadow="0 8px 30px rgba(16,185,129,0.15)"
             />
-            <StatCard
-              icon={Ban}
-              label="Blocked"
-              value={stats.blocked}
+            <StatCard icon={Ban} label="Blocked" value={stats.blocked}
               colorClass="bg-red-500/10 border border-red-500/20 text-red-400"
+              hoverShadow="0 8px 30px rgba(239,68,68,0.15)"
             />
-            <StatCard
-              icon={Zap}
-              label="Critical Alerts"
-              value={stats.critical}
+            <StatCard icon={Zap} label="Critical Alerts" value={stats.critical}
               colorClass="bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400"
+              hoverShadow="0 8px 30px rgba(217,70,239,0.15)"
             />
           </motion.div>
 
@@ -961,31 +973,45 @@ export default function Home() {
               variants={CARD}
               className="rounded-2xl border border-white/8 bg-white/4 backdrop-blur-xl p-5 shadow-xl"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold">Execution Console</h2>
                 <div className="flex items-center gap-1.5">
                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="text-[10px] text-zinc-500">Live</span>
                 </div>
               </div>
-              <div className="rounded-xl border border-white/6 bg-black/70 p-4 min-h-[220px] font-mono text-xs text-emerald-400 space-y-1.5 overflow-auto">
-                {logs.map((log, i) => (
-                  <motion.p
-                    key={`${log}-${i}`}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="leading-relaxed"
-                  >
-                    <span className="text-zinc-600 select-none mr-1">$</span>
-                    {log}
-                  </motion.p>
-                ))}
-                <motion.span
-                  animate={{ opacity: [1, 0, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                  className="inline-block h-3 w-1.5 bg-emerald-400 rounded-sm"
-                />
+              {/* Terminal window */}
+              <div className="rounded-xl border border-white/8 bg-[#0d0d0f] overflow-hidden">
+                {/* Window chrome */}
+                <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/6 bg-white/3">
+                  <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
+                  <span className="ml-2 text-[10px] text-zinc-600 font-mono">sentinel ~ bash</span>
+                </div>
+                {/* Log output */}
+                <div className="p-4 min-h-[200px] font-mono text-xs space-y-1.5 overflow-auto">
+                  {logs.map((log, i) => (
+                    <motion.p
+                      key={`${log}-${i}`}
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className={`leading-relaxed ${logColor(log)}`}
+                    >
+                      <span className="text-zinc-700 select-none mr-1.5">❯</span>
+                      {log}
+                    </motion.p>
+                  ))}
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-zinc-700 select-none">❯</span>
+                    <motion.span
+                      animate={{ opacity: [1, 0, 1] }}
+                      transition={{ duration: 1.1, repeat: Infinity }}
+                      className="inline-block h-[13px] w-[7px] bg-emerald-500/70 rounded-[2px]"
+                    />
+                  </span>
+                </div>
               </div>
             </motion.section>
           </div>
