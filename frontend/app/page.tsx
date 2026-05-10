@@ -865,20 +865,30 @@ export default function Home() {
 
               <div className="rounded-xl border border-white/8 bg-black/40 p-4 mb-4">
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Pending Request</p>
-                <p className="text-sm font-medium text-zinc-100 mb-3 leading-snug">
+                <p className="text-sm font-medium text-zinc-100 mb-3 leading-snug line-clamp-2">
                   {request || "No request entered"}
                 </p>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`h-2 w-2 rounded-full ${
-                      approvalStatus === "approved"
-                        ? "bg-emerald-400"
-                        : approvalStatus === "denied"
-                        ? "bg-red-400"
-                        : "bg-amber-400 animate-pulse"
-                    }`}
-                  />
-                  <p className="text-xs text-zinc-400">{statusLabel}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`h-2 w-2 rounded-full ${
+                        approvalStatus === "approved"
+                          ? "bg-emerald-400"
+                          : approvalStatus === "denied"
+                          ? "bg-red-400"
+                          : "bg-amber-400 animate-pulse"
+                      }`}
+                    />
+                    <p className="text-xs text-zinc-400">{statusLabel}</p>
+                  </div>
+                  <motion.span
+                    key={analysis.risk}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.badge}`}
+                  >
+                    {analysis.risk}
+                  </motion.span>
                 </div>
               </div>
 
@@ -938,30 +948,49 @@ export default function Home() {
                 </span>
               </div>
               <div className="space-y-3">
-                {timeline.map((item, i) => (
-                  <motion.div
-                    key={`${item.title}-${i}`}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 + i * 0.06 }}
-                    className="flex gap-3"
-                  >
-                    <div className="flex flex-col items-center">
-                      <div className="rounded-full border border-white/10 bg-zinc-800/80 p-1.5">
-                        <Clock3 className="h-3 w-3 text-zinc-400" />
+                {timeline.map((item, i) => {
+                  const isApproved = /approved/i.test(item.title);
+                  const isDenied = /denied/i.test(item.title);
+                  const isComplete = /execution/i.test(item.title);
+                  const dotClass = isApproved || isComplete
+                    ? "border-emerald-500/40 bg-emerald-500/15"
+                    : isDenied
+                    ? "border-red-500/40 bg-red-500/15"
+                    : i === 0
+                    ? "border-blue-500/40 bg-blue-500/15"
+                    : "border-white/10 bg-zinc-800/80";
+                  const iconClass = isApproved || isComplete
+                    ? "text-emerald-400"
+                    : isDenied
+                    ? "text-red-400"
+                    : i === 0
+                    ? "text-blue-400"
+                    : "text-zinc-400";
+                  return (
+                    <motion.div
+                      key={`${item.title}-${i}`}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + i * 0.06 }}
+                      className="flex gap-3"
+                    >
+                      <div className="flex flex-col items-center">
+                        <div className={`rounded-full border p-1.5 ${dotClass}`}>
+                          <Clock3 className={`h-3 w-3 ${iconClass}`} />
+                        </div>
+                        {i < timeline.length - 1 && (
+                          <div className="w-px flex-1 bg-white/6 mt-1.5 mb-0.5" />
+                        )}
                       </div>
-                      {i < timeline.length - 1 && (
-                        <div className="w-px flex-1 bg-white/6 mt-1.5" />
-                      )}
-                    </div>
-                    <div className="pb-3">
-                      <p className="text-xs font-medium text-zinc-200">
-                        {item.time} — {item.title}
-                      </p>
-                      <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="pb-3">
+                        <p className="text-xs font-medium text-zinc-200">
+                          {item.time} — {item.title}
+                        </p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">{item.desc}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.section>
 
