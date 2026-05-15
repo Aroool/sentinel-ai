@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { analyzeAction, type AnalysisResult, type RiskLevel } from "@/lib/analyzeAction";
 import {
@@ -248,21 +248,33 @@ export default function Home() {
   const [request, setRequest] = useState("Push this code to main");
   const [analysis, setAnalysis] = useState<AnalysisResult>(DEFAULT_ANALYSIS);
   const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "denied">("pending");
+  const initTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const [timeline, setTimeline] = useState<TimelineEvent[]>([
-    { time: "Now", title: "Request created", desc: "User requested a push to the main branch." },
-    { time: "Now", title: "Risk analysis completed", desc: "SentinelAI classified the request as HIGH risk." },
-    { time: "Now", title: "Awaiting approval", desc: "Execution paused until the authenticated user approves." },
+    { time: initTime, title: "Request created", desc: "User requested a push to the main branch." },
+    { time: initTime, title: "Risk analysis completed", desc: "SentinelAI classified the request as HIGH risk." },
+    { time: initTime, title: "Awaiting approval", desc: "Execution paused until the authenticated user approves." },
   ]);
   const [logs, setLogs] = useState<string[]>([
     "SentinelAI initialized.",
     "Security engine active.",
     "Awaiting developer request.",
   ]);
+
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [stats, setStats] = useState<Stats>({ analyzed: 0, approved: 0, blocked: 0, critical: 0 });
   const [isLoading, setIsLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const historyId = useRef(0);
+  const consoleRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll terminal to bottom whenever logs change
+  useEffect(() => {
+    if (consoleRef.current) {
+      consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   const statusLabel =
     approvalStatus === "approved"
@@ -273,11 +285,21 @@ export default function Home() {
       ? "Ready for execution"
       : "Awaiting human approval";
 
+  const reset = useCallback(() => {
+    setApprovalStatus("pending");
+    setRequest("");
+    setAnalysis(DEFAULT_ANALYSIS);
+    setTimeline([
+      { time: now(), title: "Console reset", desc: "Ready for a new request." },
+    ]);
+    setLogs(["Console cleared.", "Security engine active.", "Awaiting developer request."]);
+  }, []);
+
   const runAnalysis = useCallback(async () => {
     if (!request.trim() || isLoading) return;
     setIsLoading(true);
     setApprovalStatus("pending");
-    setLogs([`> Received: "${request}"`, "> Running Sentinel classifier...", "> Analyzing action patterns..."]);
+    setLogs([`Received: "${request}"`, "Running Sentinel classifier...", "Analyzing action patterns..."]);
 
     await new Promise((r) => setTimeout(r, 380));
 
@@ -297,15 +319,16 @@ export default function Home() {
     const nextStatus =
       result.risk === "LOW" ? "Ready for execution" : "Awaiting human approval";
 
+    const ts = now();
     setTimeline([
-      { time: "Now", title: "Request submitted", desc: `"${request}"` },
+      { time: ts, title: "Request submitted", desc: `"${request}"` },
       {
-        time: "Now",
+        time: ts,
         title: "Risk analysis complete",
         desc: `Classified as ${result.risk} risk · Category: ${result.category}`,
       },
       {
-        time: "Now",
+        time: ts,
         title: nextStatus,
         desc:
           result.risk === "LOW"
@@ -315,13 +338,13 @@ export default function Home() {
     ]);
 
     setLogs([
-      `> Received: "${request}"`,
-      `> Action: ${result.action}`,
-      `> Category: ${result.category}`,
-      `> Risk: ${result.risk}`,
+      `Received: "${request}"`,
+      `Action matched: ${result.action}`,
+      `Category: ${result.category}`,
+      `Risk level: ${result.risk}`,
       result.risk === "LOW"
-        ? "> Status: SAFE — ready for execution"
-        : "> Status: HOLD — awaiting human approval",
+        ? "Status: SAFE — ready for execution"
+        : "Status: HOLD — awaiting human approval",
     ]);
 
     setIsLoading(false);
@@ -331,16 +354,17 @@ export default function Home() {
     setApprovalStatus("approved");
     setStats((prev) => ({ ...prev, approved: prev.approved + 1 }));
     setHistory((prev) => prev.map((h, i) => (i === 0 ? { ...h, status: "approved" } : h)));
+    const ts = now();
     setTimeline((prev) => [
       ...prev,
-      { time: "Now", title: "Action approved", desc: "Authenticated user approved the request." },
-      { time: "Now", title: "Execution simulated", desc: `${analysis.action} completed successfully.` },
+      { time: ts, title: "Action approved", desc: "Authenticated user approved the request." },
+      { time: ts, title: "Execution simulated", desc: `${analysis.action} completed successfully.` },
     ]);
     setLogs((prev) => [
       ...prev,
-      "> Approval granted by authenticated user.",
-      `> Simulating: ${analysis.action}...`,
-      "> Execution complete.",
+      "Approval granted by authenticated user.",
+      `Simulating: ${analysis.action}...`,
+      "Execution complete.",
     ]);
   }, [analysis.action]);
 
@@ -348,14 +372,15 @@ export default function Home() {
     setApprovalStatus("denied");
     setStats((prev) => ({ ...prev, blocked: prev.blocked + 1 }));
     setHistory((prev) => prev.map((h, i) => (i === 0 ? { ...h, status: "denied" } : h)));
+    const ts = now();
     setTimeline((prev) => [
       ...prev,
-      { time: "Now", title: "Action denied", desc: "Authenticated user denied the request." },
+      { time: ts, title: "Action denied", desc: "Authenticated user denied the request." },
     ]);
     setLogs((prev) => [
       ...prev,
-      "> Approval denied by authenticated user.",
-      "> Execution blocked by zero-trust policy.",
+      "Approval denied by authenticated user.",
+      "Execution blocked by zero-trust policy.",
     ]);
   }, []);
 
@@ -876,6 +901,8 @@ export default function Home() {
                           ? "bg-emerald-400"
                           : approvalStatus === "denied"
                           ? "bg-red-400"
+                          : analysis.risk === "LOW"
+                          ? "bg-emerald-400 animate-pulse"
                           : "bg-amber-400 animate-pulse"
                       }`}
                     />
@@ -902,15 +929,27 @@ export default function Home() {
                 >
                   Approve & Execute
                 </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  whileHover={{ scale: 1.01 }}
-                  onClick={deny}
-                  disabled={approvalStatus !== "pending"}
-                  className="w-full rounded-xl bg-zinc-800/80 border border-white/8 px-4 py-2.5 text-sm font-semibold hover:bg-zinc-700/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Deny Request
-                </motion.button>
+                <div className="flex gap-2">
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.01 }}
+                    onClick={deny}
+                    disabled={approvalStatus !== "pending"}
+                    className="flex-1 rounded-xl bg-zinc-800/80 border border-white/8 px-4 py-2.5 text-sm font-semibold hover:bg-zinc-700/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Deny
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.01 }}
+                    onClick={reset}
+                    disabled={approvalStatus === "pending" && !request.trim()}
+                    className="rounded-xl bg-zinc-900 border border-white/8 px-4 py-2.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Clear and reset"
+                  >
+                    ↺
+                  </motion.button>
+                </div>
               </div>
 
               <div className="mt-5 pt-4 border-t border-white/6">
@@ -1019,7 +1058,7 @@ export default function Home() {
                   <span className="ml-2 text-[10px] text-zinc-600 font-mono">sentinel ~ bash</span>
                 </div>
                 {/* Log output */}
-                <div className="p-4 min-h-[200px] font-mono text-xs space-y-1.5 overflow-auto">
+                <div ref={consoleRef} className="p-4 min-h-[200px] max-h-[260px] font-mono text-xs space-y-1.5 overflow-auto">
                   {logs.map((log, i) => (
                     <motion.p
                       key={`${log}-${i}`}
