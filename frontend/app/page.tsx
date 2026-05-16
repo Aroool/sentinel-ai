@@ -948,7 +948,17 @@ export default function Home() {
             <StatCard icon={Activity} label="Total Analyzed" value={stats.analyzed}
               colorClass="bg-blue-500/10 border border-blue-500/20 text-blue-400"
               hoverShadow="0 8px 30px rgba(59,130,246,0.15)"
-              sparkline={<Sparkline risks={riskHistory} />}
+              sparkline={
+                riskHistory.length >= 2 ? (
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <TrendingUp className={`h-3.5 w-3.5 ${
+                      riskHistory[riskHistory.length - 1] === "CRITICAL" || riskHistory[riskHistory.length - 1] === "HIGH"
+                        ? "text-red-400" : "text-emerald-400"
+                    }`} />
+                    <Sparkline risks={riskHistory} />
+                  </div>
+                ) : undefined
+              }
             />
             <StatCard icon={ShieldCheck} label="Approved" value={stats.approved}
               colorClass="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
