@@ -1040,6 +1040,39 @@ export default function Home() {
                       </button>
                     </div>
                   </div>
+                  {/* Risk distribution bar */}
+                  {history.length > 0 && (() => {
+                    const counts: Record<RiskLevel, number> = { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 };
+                    history.forEach((h) => counts[h.result.risk]++);
+                    return (
+                      <div className="mb-3">
+                        <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1.5">Risk distribution</p>
+                        <div className="flex h-1.5 w-full overflow-hidden rounded-full gap-px">
+                          {(["LOW", "MEDIUM", "HIGH", "CRITICAL"] as RiskLevel[]).map((r) => {
+                            const pct = (counts[r] / history.length) * 100;
+                            if (pct === 0) return null;
+                            return (
+                              <motion.div
+                                key={r}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                title={`${r}: ${counts[r]}`}
+                                className={`h-full rounded-full ${RISK_CONFIG[r].bar}`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          {(["LOW", "MEDIUM", "HIGH", "CRITICAL"] as RiskLevel[]).filter((r) => counts[r] > 0).map((r) => (
+                            <span key={r} className={`text-[9px] font-semibold ${RISK_CONFIG[r].icon}`}>
+                              {counts[r]} {r}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {/* Risk filter chips with counts */}
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     {(["ALL", "LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((f) => {
