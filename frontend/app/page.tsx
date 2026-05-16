@@ -390,6 +390,19 @@ export default function Home() {
   // Risk sparkline — last 20 risk levels
   const [riskHistory, setRiskHistory] = useState<RiskLevel[]>([]);
 
+  // Session timer — starts on first analysis
+  const [sessionStart, setSessionStart] = useState<number | null>(null);
+  const [sessionElapsed, setSessionElapsed] = useState(0);
+  const sessionStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (sessionStart === null) return;
+    const interval = setInterval(() => {
+      setSessionElapsed(Math.floor((Date.now() - sessionStart) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionStart]);
+
   // Auto-scroll terminal to bottom whenever logs change
   useEffect(() => {
     if (consoleRef.current) {
@@ -398,6 +411,11 @@ export default function Home() {
   }, [logs]);
 
   const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  const formatElapsed = (s: number) => {
+    if (s < 60) return `${s}s`;
+    return `${Math.floor(s / 60)}m ${s % 60}s`;
+  };
 
   const statusLabel =
     approvalStatus === "approved"
@@ -473,6 +491,10 @@ export default function Home() {
     if (!request.trim() || isLoading) return;
     setIsLoading(true);
     setApprovalStatus("pending");
+    if (!sessionStartRef.current) {
+      sessionStartRef.current = Date.now();
+      setSessionStart(Date.now());
+    }
     setLogs([`Received: "${request}"`, "Running Sentinel classifier...", "Analyzing action patterns..."]);
 
     await new Promise((r) => setTimeout(r, 380));
@@ -892,6 +914,12 @@ export default function Home() {
             </div>
             </div>
             <div className="flex items-center gap-2">
+              {sessionStart !== null && (
+                <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/8 bg-white/4 px-3 py-1.5">
+                  <Clock3 className="h-3.5 w-3.5 text-zinc-500" />
+                  <span className="text-xs text-zinc-400 tabular-nums font-mono">{formatElapsed(sessionElapsed)}</span>
+                </div>
+              )}
               <button
                 onClick={() => setShowShortcuts(true)}
                 title="Keyboard shortcuts (?)"
