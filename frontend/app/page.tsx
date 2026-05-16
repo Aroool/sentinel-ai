@@ -384,6 +384,10 @@ export default function Home() {
   // Copy recommendation feedback
   const [copiedRec, setCopiedRec] = useState(false);
 
+  // CRITICAL confirm modal
+  const [showCriticalConfirm, setShowCriticalConfirm] = useState(false);
+  const [confirmInput, setConfirmInput] = useState("");
+
   // History filter
   const [historyFilter, setHistoryFilter] = useState<"ALL" | RiskLevel>("ALL");
 
@@ -638,6 +642,76 @@ export default function Home() {
       {/* Keyboard shortcuts modal */}
       <AnimatePresence>
         {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+      </AnimatePresence>
+
+      {/* CRITICAL confirmation modal */}
+      <AnimatePresence>
+        {showCriticalConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowCriticalConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 12 }}
+              transition={{ duration: 0.22 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-[340px] rounded-2xl border border-fuchsia-500/30 bg-[#100a10] p-6 shadow-2xl shadow-fuchsia-900/30"
+            >
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/10 p-2">
+                  <AlertTriangle className="h-4 w-4 text-fuchsia-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-fuchsia-300">Dangerous Action</h3>
+                  <p className="text-[10px] text-zinc-500">CRITICAL risk requires explicit confirmation</p>
+                </div>
+              </div>
+              <p className="text-xs text-zinc-400 mb-1 leading-relaxed">
+                You are about to approve a <span className="font-bold text-fuchsia-400">CRITICAL risk</span> action:
+              </p>
+              <p className="text-xs font-mono text-zinc-200 rounded-lg bg-white/5 border border-white/8 px-3 py-2 mb-4 leading-snug">
+                {analysis.action}
+              </p>
+              <p className="text-[11px] text-zinc-500 mb-2">
+                Type <span className="font-bold text-white font-mono">APPROVE</span> to confirm
+              </p>
+              <input
+                autoFocus
+                value={confirmInput}
+                onChange={(e) => setConfirmInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && confirmInput === "APPROVE") {
+                    setShowCriticalConfirm(false);
+                    approve();
+                  }
+                  if (e.key === "Escape") setShowCriticalConfirm(false);
+                }}
+                placeholder="Type APPROVE"
+                className="w-full rounded-xl border border-white/10 bg-black/60 px-3.5 py-2.5 text-sm font-mono outline-none placeholder:text-zinc-700 focus:border-fuchsia-500/50 mb-4 transition-colors"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCriticalConfirm(false)}
+                  className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 hover:bg-white/8 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={confirmInput !== "APPROVE"}
+                  onClick={() => { setShowCriticalConfirm(false); approve(); }}
+                  className="flex-1 rounded-xl bg-fuchsia-700 hover:bg-fuchsia-600 px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-fuchsia-900/30"
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Toast container */}
@@ -1343,7 +1417,14 @@ export default function Home() {
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   whileHover={{ scale: 1.01 }}
-                  onClick={approve}
+                  onClick={() => {
+                    if (analysis.risk === "CRITICAL") {
+                      setConfirmInput("");
+                      setShowCriticalConfirm(true);
+                    } else {
+                      approve();
+                    }
+                  }}
                   disabled={approvalStatus !== "pending"}
                   className={`w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors shadow-lg disabled:opacity-40 disabled:cursor-not-allowed ${cfg.button}`}
                 >
