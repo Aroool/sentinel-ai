@@ -964,23 +964,30 @@ export default function Home() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  {/* Risk filter chips */}
+                  {/* Risk filter chips with counts */}
                   <div className="flex flex-wrap gap-1.5 mb-3">
-                    {(["ALL", "LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((f) => (
-                      <button
-                        key={f}
-                        onClick={() => setHistoryFilter(f)}
-                        className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold transition-colors ${
-                          historyFilter === f
-                            ? f === "ALL"
-                              ? "border-blue-500/50 bg-blue-500/20 text-blue-300"
-                              : RISK_CONFIG[f as RiskLevel].badge
-                            : "border-white/10 bg-white/4 text-zinc-500 hover:text-zinc-300"
-                        }`}
-                      >
-                        {f}
-                      </button>
-                    ))}
+                    {(["ALL", "LOW", "MEDIUM", "HIGH", "CRITICAL"] as const).map((f) => {
+                      const count = f === "ALL" ? history.length : history.filter((h) => h.result.risk === f).length;
+                      if (f !== "ALL" && count === 0) return null;
+                      return (
+                        <button
+                          key={f}
+                          onClick={() => setHistoryFilter(f)}
+                          className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                            historyFilter === f
+                              ? f === "ALL"
+                                ? "border-blue-500/50 bg-blue-500/20 text-blue-300"
+                                : RISK_CONFIG[f as RiskLevel].badge
+                              : "border-white/10 bg-white/4 text-zinc-500 hover:text-zinc-300"
+                          }`}
+                        >
+                          {f}
+                          {count > 0 && (
+                            <span className="opacity-70">{count}</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                   {history.length === 0 ? (
                     <p className="text-sm text-zinc-600 text-center py-4">
