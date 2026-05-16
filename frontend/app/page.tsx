@@ -976,13 +976,31 @@ export default function Home() {
               >
                 <div className="rounded-2xl border border-white/8 bg-white/4 backdrop-blur-xl p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold">Request History</h3>
-                    <button
-                      onClick={() => setShowHistory(false)}
-                      className="text-zinc-500 hover:text-white transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    <div>
+                      <h3 className="text-sm font-semibold">Request History</h3>
+                      {stats.analyzed > 0 && (
+                        <p className="text-[10px] text-zinc-500 mt-0.5">
+                          {stats.analyzed} analyzed · {Math.round((stats.blocked / stats.analyzed) * 100)}% block rate
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {history.length > 0 && (
+                        <button
+                          onClick={() => { setHistory([]); setHistoryFilter("ALL"); }}
+                          className="text-[10px] text-zinc-600 hover:text-red-400 transition-colors"
+                          title="Clear history"
+                        >
+                          Clear
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowHistory(false)}
+                        className="text-zinc-500 hover:text-white transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   {/* Risk filter chips with counts */}
                   <div className="flex flex-wrap gap-1.5 mb-3">
