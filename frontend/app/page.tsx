@@ -45,6 +45,7 @@ interface HistoryItem {
   request: string;
   result: AnalysisResult;
   status: "pending" | "approved" | "denied";
+  ts: number; // unix ms
 }
 
 interface Stats {
@@ -421,6 +422,21 @@ export default function Home() {
     return `${Math.floor(s / 60)}m ${s % 60}s`;
   };
 
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((v) => v + 1), 15000);
+    return () => clearInterval(t);
+  }, []);
+
+  const relativeTime = (ms: number) => {
+    const diffS = Math.floor((Date.now() - ms) / 1000);
+    if (diffS < 10) return "just now";
+    if (diffS < 60) return `${diffS}s ago`;
+    if (diffS < 3600) return `${Math.floor(diffS / 60)}m ago`;
+    return `${Math.floor(diffS / 3600)}h ago`;
+  };
+  void tick; // consumed by relativeTime calls
+
   const statusLabel =
     approvalStatus === "approved"
       ? "Approved & executed"
@@ -509,7 +525,7 @@ export default function Home() {
     setAnalysis(result);
 
     const id = ++historyId.current;
-    setHistory((prev) => [{ id, request, result, status: "pending" }, ...prev.slice(0, 19)]);
+    setHistory((prev) => [{ id, request, result, status: "pending", ts: Date.now() }, ...prev.slice(0, 19)]);
     setStats((prev) => ({
       ...prev,
       analyzed: prev.analyzed + 1,
@@ -1183,15 +1199,31 @@ export default function Home() {
                   ) : (
                     <div className="space-y-1.5 max-h-48 overflow-y-auto">
                       {filteredHistory.map((item) => (
-                        <button
+                        <div
                           key={item.id}
-                          onClick={() => { setRequest(item.request); setShowHistory(false); }}
-                          className="w-full flex items-center gap-3 rounded-xl border border-white/6 bg-black/30 px-3.5 py-2.5 text-left hover:bg-white/5 transition-colors group"
+                          className="w-full flex items-center gap-2 rounded-xl border border-white/6 bg-black/30 px-3 py-2.5 group hover:bg-white/5 transition-colors"
                         >
                           <HistoryBadge risk={item.result.risk} />
-                          <span className="flex-1 truncate text-sm text-zinc-300 group-hover:text-white transition-colors">
-                            {item.request}
-                          </span>
+                          <button
+                            onClick={() => { setRequest(item.request); setShowHistory(false); }}
+                            className="flex-1 min-w-0 text-left"
+                          >
+                            <span className="block truncate text-sm text-zinc-300 group-hover:text-white transition-colors">
+                              {item.request}
+                            </span>
+                            <span className="text-[10px] text-zinc-600">{relativeTime(item.ts)}</span>
+                          </button>
+                          <button
+                            title="Re-analyze"
+                            onClick={() => {
+                              setRequest(item.request);
+                              setShowHistory(false);
+                              setTimeout(() => runAnalysisRef.current(), 80);
+                            }}
+                            className="flex-shrink-0 rounded-lg border border-white/8 bg-white/4 px-2 py-1 text-[10px] text-zinc-500 hover:text-zinc-200 hover:bg-white/8 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            ↺
+                          </button>
                           <span
                             className={`text-xs font-medium flex-shrink-0 ${
                               item.status === "approved"
@@ -1203,7 +1235,7 @@ export default function Home() {
                           >
                             {item.status === "pending" ? "—" : item.status}
                           </span>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   )}
