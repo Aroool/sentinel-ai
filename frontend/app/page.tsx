@@ -252,6 +252,26 @@ function HistoryBadge({ risk }: { risk: RiskLevel }) {
   );
 }
 
+// ── Copy Logs Button ──────────────────────────────────────────────────────
+function CopyLogsButton({ logs }: { logs: string[] }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(logs.join("\n")).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      }}
+      title="Copy log output"
+      className="flex items-center gap-1 rounded-lg border border-white/8 bg-white/4 px-2 py-1 text-[10px] text-zinc-500 hover:text-zinc-200 hover:bg-white/8 transition-colors"
+    >
+      {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
 // ── Sparkline ─────────────────────────────────────────────────────────────
 const RISK_Y: Record<RiskLevel, number> = { LOW: 0.85, MEDIUM: 0.55, HIGH: 0.28, CRITICAL: 0.05 };
 
@@ -1382,9 +1402,12 @@ export default function Home() {
             >
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold">Execution Console</h2>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] text-zinc-500">Live</span>
+                <div className="flex items-center gap-2">
+                  <CopyLogsButton logs={logs} />
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[10px] text-zinc-500">Live</span>
+                  </div>
                 </div>
               </div>
               {/* Terminal window */}
