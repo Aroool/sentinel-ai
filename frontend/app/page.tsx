@@ -1050,6 +1050,7 @@ export default function Home() {
               </div>
 
               <textarea
+                maxLength={500}
                 className="w-full h-32 rounded-xl border border-white/8 bg-black/50 p-3.5 text-sm text-zinc-100 outline-none resize-none transition-colors placeholder:text-zinc-600 focus:border-blue-500/40 focus:bg-black/70"
                 placeholder="e.g. git push origin main"
                 value={request}
@@ -1057,10 +1058,15 @@ export default function Home() {
                 onKeyDown={handleKeyDown}
               />
 
+              <div className="flex justify-end mt-1 mb-0.5">
+                <span className={`text-[10px] tabular-nums ${request.length > 200 ? "text-amber-400" : "text-zinc-700"}`}>
+                  {request.length}/500
+                </span>
+              </div>
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={runAnalysis}
-                disabled={isLoading}
+                disabled={isLoading || request.trim().length === 0}
                 className="mt-3 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
